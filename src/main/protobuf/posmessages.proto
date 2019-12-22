@@ -1,0 +1,90 @@
+syntax = "proto3";
+
+import "google/protobuf/wrappers.proto";
+import "google/protobuf/any.proto";
+import "scalapb/scalapb.proto";
+
+option (scalapb.options) = {
+  // use a custom Scala package name
+  // package_name: "io.ontherocks.introgrpc.demo"
+
+  // don't append file name to package
+  flat_package: true
+
+  // generate one Scala file for all messages (services still get their own file)
+  single_file: true
+
+  // add imports to generated file
+  // useful when extending traits or using custom types
+  // import: "io.ontherocks.hellogrpc.RockingMessage"
+
+  // code to put at the top of generated file
+  // works only with `single_file: true`
+  //preamble: "sealed trait SomeSealedTrait"
+};
+
+package com.datatech.pos.messages;
+
+message PBVchState {      //单据状态
+    string opr  = 1;    //收款员
+    int64  jseq = 2;    //begin journal sequence for read-side replay
+    int32  num  = 3;    //当前单号
+    int32  seq  = 4;    //当前序号
+    bool   void = 5;    //取消模式
+    bool   refd = 6;    //退款模式
+    bool   susp = 7;    //挂单
+    bool   canc = 8;    //废单
+    bool   due  = 9;    //当前余额
+    string su   = 10;   //主管编号
+    string mbr  = 11;   //会员号
+    int32  mode = 12;   //当前操作流程：0=logOff, 1=LogOn, 2=Payment
+
+}
+
+message PBTxnItem {       //交易记录
+    string txndate    = 1;   //交易日期
+    string txntime    = 2;   //录入时间
+    string opr        = 3;   //操作员
+    int32  num        = 4;   //销售单号
+    int32  seq        = 5;   //交易序号
+    int32  txntype    = 6;   //交易类型
+    int32  salestype  = 7;   //销售类型
+    int32  qty        = 8;   //交易数量
+    int32  price      = 9;   //单价（分）
+    int32  amount     = 10;  //码洋（分）
+    int32  disc       = 11;  //折扣率 (%) 100% = 1
+    int32  dscamt     = 12;  //折扣额：负值  net实洋 = amount + dscamt
+    string member     = 13;  //会员卡号
+    string code       = 14;  //编号（商品、卡号...）
+    string acct       = 15;  //账号
+    string dpt        = 16;  //部类
+}
+
+message PBPOSResponse {
+    int32  sts                  = 1;
+    string msg                  = 2;
+    PBVchState voucher          = 3;
+    repeated PBTxnItem txnitems   = 4;
+
+}
+
+message PBPOSCommand {
+    string commandname = 1;
+    string delimitedparams = 2;
+}
+
+message PBPOSCredential {
+    string userid = 1;
+    string password = 2;
+}
+
+message PBPOSToken {
+    string jwt = 1;
+}
+
+
+service SendCommand {
+    rpc SingleResponse(PBPOSCommand) returns (PBPOSResponse) {};
+    rpc GetTxnItems(PBPOSCommand) returns (stream PBTxnItem) {};
+    rpc GetAuthToken(PBPOSCredential) returns (PBPOSToken) {};
+}
